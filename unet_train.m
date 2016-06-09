@@ -1,10 +1,11 @@
 function [net, info] = unet_train(varargin)
 
-run  /Users/Leonard/Documents/MATLAB/TUM/MLMI/matconvnet/matlab/vl_setupnn
+run  %/Users/.../vl_setupnn
 
 % define training data
 opts.dataDir = fullfile('myfolder','mysubfolder','myfile.m');
 opts.whitenData = true ;
+
 opts.contrastNormalization = true ;
 opts.train = struct() ;
 opts = vl_argparse(opts, varargin) ;
@@ -15,8 +16,8 @@ net = unet_init.m;
 imdb = load(opts.dataDir) ;
 
 % Train the model
-[net, info] = trainfn(net, imdb, getBatch(opts), ...
-  'expDir', opts.expDir, ...
+[net, info] = trainfn(net, imdb, ...
   net.meta.trainOpts, ...
-  opts.train, ...
-  'val', find(imdb.images.set == 3)) ;
+  opts.train);
+  %'val', find(imdb.images.set == 3)) ;
+end
