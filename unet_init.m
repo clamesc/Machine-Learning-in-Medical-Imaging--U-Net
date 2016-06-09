@@ -1,6 +1,4 @@
-clear all
-run /home/qwertzuiopu/.matconvnet-1.0-beta20/matlab/vl_setupnn
-
+function net = unet_init()
 % Create DAGNN object
 net = dagnn.DagNN();
 
@@ -8,7 +6,7 @@ net = dagnn.DagNN();
 poolBlock = dagnn.Pooling('poolSize', [2 2], 'stride', 2);
 
 %Create Network Layers
-net.addLayer('conv3x3_01', convBlock(3,3,1,64), {'x01'}, {'x02'}, {'f01', 'b01'});
+net.addLayer('conv3x3_01', convBlock(3,3,1,64), {'input'}, {'x02'}, {'f01', 'b01'});
 net.addLayer('relu_01', dagnn.ReLU(), {'x02'}, {'x03'}, {});
 net.addLayer('conv3x3_02', convBlock(3,3,64,64), {'x03'}, {'x04'}, {'f02', 'b02'});
 net.addLayer('relu_02', dagnn.ReLU(), {'x04'}, {'x05'}, {});
@@ -36,7 +34,7 @@ net.addLayer('conv3x3_09', convBlock(3,3,512,1024), {'x21'}, {'x22'}, {'f09', 'b
 net.addLayer('relu_09', dagnn.ReLU(), {'x22'}, {'x23'}, {});
 net.addLayer('conv3x3_10', convBlock(3,3,1024,1024), {'x23'}, {'x24'}, {'f10', 'b10'});
 net.addLayer('relu_10', dagnn.ReLU(), {'x24'}, {'x25'}, {});
-net.addLayer('upconv_01', convtBlock(2,2,1024,512), {'x25'}, {'x26'}, {'uf01', 'ub01'});
+net.addLayer('upconv_01', convtBlock(2,2,512,1024), {'x25'}, {'x26'}, {'uf01', 'ub01'});
 
 net.addLayer('crop_01', dagnn.Crop(), {'x20', 'x26'}, {'x27'}, {});
 net.addLayer('concat_01', dagnn.Concat('dim', 3), {'x27', 'x26'}, {'x28'}, {});
@@ -44,7 +42,7 @@ net.addLayer('conv3x3_11', convBlock(3,3,1024,512), {'x28'}, {'x29'}, {'f11', 'b
 net.addLayer('relu_11', dagnn.ReLU(), {'x29'}, {'x30'}, {});
 net.addLayer('conv3x3_12', convBlock(3,3,512,512), {'x30'}, {'x31'}, {'f12', 'b12'});
 net.addLayer('relu_12', dagnn.ReLU(), {'x31'}, {'x32'}, {});
-net.addLayer('upconv_02', convtBlock(2,2,512,256), {'x32'}, {'x33'}, {'uf02', 'ub02'});
+net.addLayer('upconv_02', convtBlock(2,2,256,512), {'x32'}, {'x33'}, {'uf02', 'ub02'});
 
 net.addLayer('crop_02', dagnn.Crop(), {'x15', 'x33'}, {'x34'}, {});
 net.addLayer('concat_02', dagnn.Concat('dim', 3), {'x34', 'x33'}, {'x35'}, {});
@@ -52,7 +50,7 @@ net.addLayer('conv3x3_13', convBlock(3,3,512,256), {'x35'}, {'x36'}, {'f13', 'b1
 net.addLayer('relu_13', dagnn.ReLU(), {'x36'}, {'x37'}, {});
 net.addLayer('conv3x3_14', convBlock(3,3,256,256), {'x37'}, {'x38'}, {'f14', 'b14'});
 net.addLayer('relu_14', dagnn.ReLU(), {'x38'}, {'x39'}, {});
-net.addLayer('upconv_03', convtBlock(2,2,256,128), {'x39'}, {'x40'}, {'uf03', 'ub03'});
+net.addLayer('upconv_03', convtBlock(2,2,128,256), {'x39'}, {'x40'}, {'uf03', 'ub03'});
 
 net.addLayer('crop_03', dagnn.Crop(), {'x10', 'x40'}, {'x41'}, {});
 net.addLayer('concat_03', dagnn.Concat('dim', 3), {'x41', 'x40'}, {'x42'}, {});
@@ -60,7 +58,7 @@ net.addLayer('conv3x3_15', convBlock(3,3,256,128), {'x42'}, {'x43'}, {'f15', 'b1
 net.addLayer('relu_15', dagnn.ReLU(), {'x43'}, {'x44'}, {});
 net.addLayer('conv3x3_16', convBlock(3,3,128,128), {'x44'}, {'x45'}, {'f16', 'b16'});
 net.addLayer('relu_16', dagnn.ReLU(), {'x45'}, {'x46'}, {});
-net.addLayer('upconv_04', convtBlock(2,2,128,64), {'x46'}, {'x47'}, {'uf04', 'ub04'});
+net.addLayer('upconv_04', convtBlock(2,2,64,128), {'x46'}, {'x47'}, {'uf04', 'ub04'});
 
 net.addLayer('crop_04', dagnn.Crop(), {'x05', 'x47'}, {'x48'}, {});
 net.addLayer('concat_04', dagnn.Concat('dim', 3), {'x48', 'x47'}, {'x49'}, {});
@@ -68,14 +66,17 @@ net.addLayer('conv3x3_17', convBlock(3,3,128,64), {'x49'}, {'x50'}, {'f17', 'b17
 net.addLayer('relu_17', dagnn.ReLU(), {'x50'}, {'x51'}, {});
 net.addLayer('conv3x3_18', convBlock(3,3,64,64), {'x51'}, {'x52'}, {'f18', 'b18'});
 net.addLayer('relu_18', dagnn.ReLU(), {'x52'}, {'x53'}, {});
-net.addLayer('conv1x1_01', convBlock(1,1,64,2), {'x53'}, {'x54'}, {'f19', 'b19'});
+net.addLayer('conv1x1_01', convBlock(1,1,64,2), {'x53'}, {'label'}, {'f19', 'b19'});
+
+net.addLayer('error', dagnn.Loss('loss', 'classerror'), ...
+             {'prediction','label'}, 'error') ;
 
 
 %Initialise random parameters
 net.initParams();
 
 %Visualize Network
-net.print({'x01', [572 572 1]}, 'all', true, 'format', 'dot')
+net.print({'input', [572 572 1]}, 'all', true, 'format', 'dot')
 
 %Receptive Fields
 %net.getVarReceptiveFields('x01').size
