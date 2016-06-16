@@ -66,10 +66,12 @@ net.addLayer('conv3x3_17', convBlock(3,3,128,64), {'x49'}, {'x50'}, {'f17', 'b17
 net.addLayer('relu_17', dagnn.ReLU(), {'x50'}, {'x51'}, {});
 net.addLayer('conv3x3_18', convBlock(3,3,64,64), {'x51'}, {'x52'}, {'f18', 'b18'});
 net.addLayer('relu_18', dagnn.ReLU(), {'x52'}, {'x53'}, {});
-net.addLayer('conv1x1_01', convBlock(1,1,64,2), {'x53'}, {'label'}, {'f19', 'b19'});
+net.addLayer('conv1x1_01', convBlock(1,1,64,2), {'x53'}, {'prediction'}, {'f19', 'b19'});
 
-net.addLayer('error', dagnn.Loss('loss', 'classerror'), ...
-             {'prediction','label'}, 'error') ;
+net.addLayer('error', dagnn.Loss('loss', 'softmaxlog'), {'prediction','label'}, 'objective') ;
+net.addLayer('error2', dagnn.Loss('loss', 'classerror'), {'prediction','label'}, 'error');
+
+net.addLayer('prob', dagnn.SoftMax(), {'prediction'}, 'prob');
 
 
 %Initialise random parameters
