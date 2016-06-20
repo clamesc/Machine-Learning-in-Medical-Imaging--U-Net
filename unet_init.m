@@ -78,7 +78,7 @@ net.addLayer('prob', dagnn.SoftMax(), {'prediction'}, 'prob');
 net.initParams();
 
 %Visualize Network
-net.print({'input', [572 572 1]}, 'all', true, 'format', 'dot')
+%net.print({'input', [572 572 1]}, 'all', true, 'format', 'dot')
 
 %Receptive Fields
 %net.getVarReceptiveFields('x01').size
