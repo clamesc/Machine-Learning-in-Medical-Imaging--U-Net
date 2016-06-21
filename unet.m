@@ -1,65 +1,76 @@
-function [net, info] = unet()
-clear all
-run /home/qwertzuiopu/.matconvnet-1.0-beta20/matlab/vl_setupnn
+function [net, info] = unet( varargin )
 
-net = unet_init();
-opts.expDir = fullfile(pwd,'data');
-net.meta.trainOpts.learningRate = [5.0e-12];  %0.0000000000005
-net.meta.trainOpts.weightDecay = 1.0e-5;       %1.0
-net.meta.trainOpts.batchSize = 1;
-net.meta.trainOpts.numEpochs = 1;
-opts.train.gpus = [];
+    clear all;
+    run /home/qwertzuiopu/.matconvnet-1.0-beta20/matlab/vl_setupnn;
+    %addpath('C:\libs\matconvnet\matconvnet\matlab');
+    %vl_setupnn;
 
-n = 1;
-data = zeros(572,572,1,n);
-for i = 1:n
-    im = imread(fullfile(pwd,'ExampleImages','train-volume.tif') ,i);
-    pad = (572 - size(im,1))/2;
-    im = padarray(im,[pad pad],'symmetric');
-    data(:,:,:,i) = im;
+    trainOpts.expDir = fullfile(pwd,'data');
+    trainOpts.val = [];
+    trainOpts.train = [];
+    trainOpts.batchSize = 10;
+    trainOpts.numSubBatches = 1;
+    trainOpts.numEpochs = 20;
+    trainOpts.continue = false;
+    trainOpts.gpus = 1;
+    trainOpts.learningRate = 0.001;
+    trainOpts.momentum = 0.9 ;
+    %trainOpts.plotStatistics = false;
+    trainOpts.derOutputs = {'objective', 1};
+    trainOpts = vl_argparse(trainOpts, varargin);
+    
+    net = unet_init();
+    
+    define imdb object with file names of dataset
+    
+    trainOpts.train
+    trainOpts.val
+    
+    [net, info] = cnn_train_dag(net, imdbTool, @getBatch, trainOpts) ;
+                                
+    %net.eval({'input',data(:,:,:,1)});
+    %prediction = net.vars(net.getVarIndex('prediction')).value;
+    %segmentation = net.vars(net.getVarIndex('prob')).value;
+    %figure(2);
+    %imagesc(prediction(:,:,1))
+    %figure(3);
+    %imagesc(segmentation(:,:,1))
+
 end
-data = single(data);
 
-labels = zeros(388,388,1,n);
-for i = 1:n
-    im = imread(fullfile(pwd,'ExampleImages','train-labels.tif') ,i)/255. +1;
-    crop = (512 - 388)/2;
-    l = im(crop:end-crop,crop:end-crop);
-    labels(:,:,1,i) = im(crop+1:end-crop,crop+1:end-crop);
-    %labels(:,:,2,i) = ~im(crop+1:end-crop,crop+1:end-crop);
+function inputs = getBatch(imdb, batch, varargin)
+    % Load batch input
+    inputData = vl_imreadjpeg(imdb.inFilenames(batch), 'NumThreads', 6);
+    
+    % Convert structure format into array
+    inputData = cat(4, inputData{:});
+    
+    % Add padding to images to match inputsize
+    inputsize = 428;
+    pad = (inputsize - size(inputData,1))/2;
+    input = zeros(size(inputData,1)+2*pad, ...
+                  size(inputData,2)+2*pad, ...
+                  1, ...
+                  size(inputData,3));
+    input(pad+1:end-pad,pad+1:end-pad,:,:) = inputData;
+    
+    % Create array on GPU
+    input = gpuArray(input);
+    
+    % Load batch output
+    output = vl_imreadjpeg(imdb.outFilenames(batch), 'NumThreads', 6);
+    
+    % Convert structure format into array
+    output = cat(4, output{:});
+    
+    % Crop images to output size
+    outputsize = 244;
+    crop = (size(output,1) - outputsize)/2
+    output = output(crop+1:end-crop,crop+1:end-crop,:,:);
+    
+    % Create array on GPU
+    output = gpuArray();
+    
+    inputs = {'input', input, ...
+              'labels', output};
 end
-labels = single(labels);
-%labels(labels==0)=-1;
-
-imdb.images.data = data;
-imdb.images.labels = labels;
-imdb.images.set = single(ones(1,n));
-imdb.meta.sets = {'train', 'val', 'test'};
-imdb.meta.classes = {'positive', 'negative'};
-
-[net, info] = cnn_train_dag(net, imdb, getBatch(opts), ...
-  'expDir', opts.expDir, ...
-  net.meta.trainOpts, ...
-  opts.train) ;
-  
-
-net.eval({'input',data(:,:,:,1)});
-prediction = net.vars(net.getVarIndex('prediction')).value;
-segmentation = net.vars(net.getVarIndex('prob')).value;
-figure(2);
-imagesc(prediction(:,:,1))
-figure(3);
-imagesc(segmentation(:,:,1))
-
-function fn = getBatch(opts)
-bopts = struct('numGpus', numel(opts.train.gpus)) ;
-fn = @(x,y) getDagNNBatch(bopts,x,y) ;
-
-function inputs = getDagNNBatch(opts, imdb, batch)
-images = imdb.images.data(:,:,:,batch) ;
-labels = imdb.images.labels(1,batch) ;
-if rand > 0.5, images=fliplr(images) ; end
-if opts.numGpus > 0
-    images = gpuArray(images) ;
-end
-inputs = {'input', images, 'label', labels} ;
