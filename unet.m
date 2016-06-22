@@ -1,6 +1,5 @@
 function [net, info] = unet( varargin )
 
-    clear all;
     run /home/qwertzuiopu/.matconvnet-1.0-beta20/matlab/vl_setupnn;
     %addpath('C:\libs\matconvnet\matconvnet\matlab');
     %vl_setupnn;
@@ -8,12 +7,12 @@ function [net, info] = unet( varargin )
     trainOpts.expDir = fullfile(pwd,'data');
     trainOpts.val = [];
     trainOpts.train = [];
-    trainOpts.batchSize = 10;
+    trainOpts.batchSize = 1;
     trainOpts.numSubBatches = 1;
-    trainOpts.numEpochs = 20;
+    trainOpts.numEpochs = 50;
     trainOpts.continue = false;
-    trainOpts.gpus = 1;
-    trainOpts.learningRate = 0.001;
+    trainOpts.gpus = []; %1
+    trainOpts.learningRate = 0.0000001;
     trainOpts.momentum = 0.9 ;
     %trainOpts.plotStatistics = false;
     trainOpts.derOutputs = {'objective', 1};
@@ -21,24 +20,50 @@ function [net, info] = unet( varargin )
     
     net = unet_init();
     
-    define imdb object with file names of dataset
+    inPath = '/home/qwertzuiopu/data/2d_images_extr/T1/';
+    outPath = '/home/qwertzuiopu/data/2d_images_extr/T2/';
     
-    trainOpts.train
-    trainOpts.val
+    inFiles = dir(fullfile(inPath,'*.jpg'));
+    outFiles = dir(fullfile(outPath,'*.jpg'));
+    inFiles = struct2cell(inFiles)';
+    outFiles = struct2cell(outFiles)';
+    inFiles = inFiles(:,1);
+    outFiles = outFiles(:,1);
     
-    [net, info] = cnn_train_dag(net, imdbTool, @getBatch, trainOpts) ;
-                                
-    %net.eval({'input',data(:,:,:,1)});
-    %prediction = net.vars(net.getVarIndex('prediction')).value;
-    %segmentation = net.vars(net.getVarIndex('prob')).value;
-    %figure(2);
-    %imagesc(prediction(:,:,1))
-    %figure(3);
-    %imagesc(segmentation(:,:,1))
+    testNumber = 2;
+    inFiles = inFiles(1:testNumber,1);
+    outFiles = outFiles(1:testNumber,1);
+    
+    for t = 1 : size(inFiles,1)
+        imdb.inFilenames{t} = fullfile(inPath, char(inFiles(t,1)));
+        imdb.outFilenames{t} = fullfile(outPath, char(outFiles(t,1)));
+    end
+    
+    trainRatio = 0.5;
+    trainRatio = round(size(inFiles,1)*trainRatio);
+    trainOpts.train = sort(randsample(size(inFiles,1), trainRatio));
+    trainOpts.val = setdiff([1:size(inFiles,1)],trainOpts.train);
+    
+    [net, info] = cnn_train_dag(net, imdb, @getBatch, trainOpts) ;
+    
+    inputData = vl_imreadjpeg(imdb.inFilenames(1), 'NumThreads', 6);
+    inputData = cat(4, inputData{:});
+    inputsize = 428;
+    pad = (inputsize - size(inputData,1))/2;
+    input = zeros(size(inputData,1)+2*pad, ...
+                  size(inputData,2)+2*pad, ...
+                  1, ...
+                  size(inputData,3));
+    input(pad+1:end-pad,pad+1:end-pad,:,:) = inputData;
+    input = single(input);
+    net.eval({'input',input});
+    prediction = net.vars(net.getVarIndex('predictions')).value;
+    imagesc(prediction)
 
 end
 
 function inputs = getBatch(imdb, batch, varargin)
+
     % Load batch input
     inputData = vl_imreadjpeg(imdb.inFilenames(batch), 'NumThreads', 6);
     
@@ -53,9 +78,10 @@ function inputs = getBatch(imdb, batch, varargin)
                   1, ...
                   size(inputData,3));
     input(pad+1:end-pad,pad+1:end-pad,:,:) = inputData;
+    input = single(input);
     
     % Create array on GPU
-    input = gpuArray(input);
+    %input = gpuArray(input);
     
     % Load batch output
     output = vl_imreadjpeg(imdb.outFilenames(batch), 'NumThreads', 6);
@@ -65,11 +91,12 @@ function inputs = getBatch(imdb, batch, varargin)
     
     % Crop images to output size
     outputsize = 244;
-    crop = (size(output,1) - outputsize)/2
+    crop = (size(output,1) - outputsize)/2;
     output = output(crop+1:end-crop,crop+1:end-crop,:,:);
+    output = single(output);
     
     % Create array on GPU
-    output = gpuArray();
+    %output = gpuArray(output);
     
     inputs = {'input', input, ...
               'labels', output};

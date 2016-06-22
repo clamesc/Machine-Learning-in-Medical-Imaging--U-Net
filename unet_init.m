@@ -66,26 +66,16 @@ function net = unet_init()
     net.addLayer('relu_17', dagnn.ReLU(), {'x50'}, {'x51'}, {});
     net.addLayer('conv3x3_18', convBlock(3,3,64,64), {'x51'}, {'x52'}, {'f18', 'b18'});
     net.addLayer('relu_18', dagnn.ReLU(), {'x52'}, {'x53'}, {});
-    net.addLayer('conv1x1_01', convBlock(1,1,64,2), {'x53'}, {'predictions'}, {'f19', 'b19'});
+    net.addLayer('conv1x1_01', convBlock(1,1,64,1), {'x53'}, {'predictions'}, {'f19', 'b19'});
     
     net.addLayer('loss', dagnn.Loss('loss', 'regloss'), {'predictions', 'labels'}, 'objective') ;
-
 
     %Initialise random parameters
     net.initParams();
 
     %Visualize Network
-    %net.print({'input', [572 572 1]}, 'all', true, 'format', 'dot')
+    %net.print({'input', [428 428 1]}, 'all', true, 'format', 'dot')
     
     %Receptive Fields
     %net.getVarReceptiveFields('x01').size
-end
-
-function params = initParams(obj)
-     %sc = sqrt(2 / prod(obj.size(1:3))) ;
-     sc = 0.01;
-     params{1} = randn(obj.size,'single') * sc ;
-     if obj.hasBias
-       params{2} = zeros(obj.size(4),1,'single') * sc ;
-     end
 end
