@@ -10,7 +10,7 @@ function [net, info] = unet( varargin )
     trainOpts.train = [];
     trainOpts.batchSize = 1;
     trainOpts.numSubBatches = 1;
-    trainOpts.numEpochs = 30;
+    trainOpts.numEpochs = 50;
     trainOpts.continue = false;
     trainOpts.gpus = []; %1
     trainOpts.learningRate = 0.00000001;
@@ -23,12 +23,12 @@ function [net, info] = unet( varargin )
     net = unet_init();
     
     % Set different Learning Rate for Transposed Convolutions
-    convtFactor = 0.1;
-    convtLR = trainOpts.learningRate * convtFactor;
-    net.layers(25).learningRate = [convtLR, convtLR];
-    net.layers(32).learningRate = [convtLR, convtLR];
-    net.layers(39).learningRate = [convtLR, convtLR];
-    net.layers(46).learningRate = [convtLR, convtLR];
+    %convtFactor = 0.1;
+    %convtLR = trainOpts.learningRate * convtFactor;
+    %net.layers(25).learningRate = [convtLR, convtLR];
+    %net.layers(32).learningRate = [convtLR, convtLR];
+    %net.layers(39).learningRate = [convtLR, convtLR];
+    %net.layers(46).learningRate = [convtLR, convtLR];
     
     % Get Filenames
     inPath = '/home/qwertzuiopu/data/2d_images_extr/T1/';
@@ -87,7 +87,7 @@ function inputs = getBatch(imdb, batch, varargin)
     inputData = cat(4, inputData{:});
     
     % Add padding to images to match inputsize
-    inputsize = 428;
+    inputsize = 264;
     pad = (inputsize - size(inputData,1))/2;
     input = zeros(size(inputData,1)+2*pad, ...
                   size(inputData,2)+2*pad, ...
@@ -106,7 +106,7 @@ function inputs = getBatch(imdb, batch, varargin)
     output = cat(4, output{:});
     
     % Crop images to output size
-    outputsize = 244;
+    outputsize = 256;
     crop = (size(output,1) - outputsize)/2;
     output = output(crop+1:end-crop,crop+1:end-crop,:,:);
     output = single(output);
