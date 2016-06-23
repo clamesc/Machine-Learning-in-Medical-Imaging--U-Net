@@ -10,10 +10,10 @@ function [net, info] = unet( varargin )
     trainOpts.train = [];
     trainOpts.batchSize = 1;
     trainOpts.numSubBatches = 1;
-    trainOpts.numEpochs = 50;
-    trainOpts.continue = false;
+    trainOpts.numEpochs = 14;
+    trainOpts.continue = true;
     trainOpts.gpus = []; %1
-    trainOpts.learningRate = 0.0000001;
+    trainOpts.learningRate = 0.00000001;
     trainOpts.momentum = 0.9 ;
     %trainOpts.plotStatistics = false;
     trainOpts.derOutputs = {'objective', 1};
@@ -21,6 +21,14 @@ function [net, info] = unet( varargin )
     
     % Initialise CNN
     net = unet_init();
+    
+    % Set different Learning Rate for Transposed Convolutions
+    convtFactor = 0.1;
+    convtLR = trainOpts.learningRate * convtFactor;
+    net.layers(25).learningRate = [convtLR, convtLR];
+    net.layers(32).learningRate = [convtLR, convtLR];
+    net.layers(39).learningRate = [convtLR, convtLR];
+    net.layers(46).learningRate = [convtLR, convtLR];
     
     % Get Filenames
     inPath = '/home/qwertzuiopu/data/2d_images_extr/T1/';
@@ -38,6 +46,7 @@ function [net, info] = unet( varargin )
     inFiles = inFiles(1:testNumber,1);
     outFiles = outFiles(1:testNumber,1);
     
+    % Define Image Database
     for t = 1 : size(inFiles,1)
         imdb.inFilenames{t} = fullfile(inPath, char(inFiles(t,1)));
         imdb.outFilenames{t} = fullfile(outPath, char(outFiles(t,1)));
