@@ -4,6 +4,7 @@ function [net, info] = unet( varargin )
     %addpath('C:\libs\matconvnet\matconvnet\matlab');
     %vl_setupnn;
 
+    % Training parameter
     trainOpts.expDir = fullfile(pwd,'data');
     trainOpts.val = [];
     trainOpts.train = [];
@@ -18,8 +19,10 @@ function [net, info] = unet( varargin )
     trainOpts.derOutputs = {'objective', 1};
     trainOpts = vl_argparse(trainOpts, varargin);
     
+    % Initialise CNN
     net = unet_init();
     
+    % Get Filenames
     inPath = '/home/qwertzuiopu/data/2d_images_extr/T1/';
     outPath = '/home/qwertzuiopu/data/2d_images_extr/T2/';
     
@@ -30,6 +33,7 @@ function [net, info] = unet( varargin )
     inFiles = inFiles(:,1);
     outFiles = outFiles(:,1);
     
+    % Reduce Dataset for Testing
     testNumber = 2;
     inFiles = inFiles(1:testNumber,1);
     outFiles = outFiles(1:testNumber,1);
@@ -39,13 +43,16 @@ function [net, info] = unet( varargin )
         imdb.outFilenames{t} = fullfile(outPath, char(outFiles(t,1)));
     end
     
+    % Define Training and Validation Set
     trainRatio = 0.5;
     trainRatio = round(size(inFiles,1)*trainRatio);
     trainOpts.train = sort(randsample(size(inFiles,1), trainRatio));
     trainOpts.val = setdiff([1:size(inFiles,1)],trainOpts.train);
     
+    % Train Network
     [net, info] = cnn_train_dag(net, imdb, @getBatch, trainOpts) ;
     
+    % Show Prediction for Trained Network
     inputData = vl_imreadjpeg(imdb.inFilenames(1), 'NumThreads', 6);
     inputData = cat(4, inputData{:});
     inputsize = 428;
