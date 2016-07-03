@@ -8,13 +8,13 @@ function [net, info] = unet( varargin )
     trainOpts.expDir = fullfile(pwd,'data');
     trainOpts.val = [];
     trainOpts.train = [];
-    trainOpts.batchSize = 1;
+    trainOpts.batchSize = 20;
     trainOpts.numSubBatches = 1;
-    trainOpts.numEpochs = 14;
-    trainOpts.continue = true;
+    trainOpts.numEpochs = 25;
+    trainOpts.continue = false;
     trainOpts.gpus = []; %1
-    trainOpts.learningRate = 0.00000001;
-    trainOpts.momentum = 0.9 ;
+    trainOpts.learningRate = [10e-6*ones(1,5), 10e-7*ones(1,5), 10e-8*ones(1,5), 10e-9*ones(1,5), 10e-10*ones(1,5)];
+    trainOpts.momentum = 0.95 ;
     %trainOpts.plotStatistics = false;
     trainOpts.derOutputs = {'objective', 1};
     trainOpts = vl_argparse(trainOpts, varargin);
@@ -23,7 +23,7 @@ function [net, info] = unet( varargin )
     net = unet_init();
     
     % Set different Learning Rate for Transposed Convolutions
-    convtFactor = 0.1;
+    convtFactor = 1.0;
     convtLR = trainOpts.learningRate * convtFactor;
     net.layers(25).learningRate = [convtLR, convtLR];
     net.layers(32).learningRate = [convtLR, convtLR];
@@ -42,7 +42,7 @@ function [net, info] = unet( varargin )
     outFiles = outFiles(:,1);
     
     % Reduce Dataset for Testing
-    testNumber = 2;
+    testNumber = 1000;
     inFiles = inFiles(1:testNumber,1);
     outFiles = outFiles(1:testNumber,1);
     
@@ -53,10 +53,10 @@ function [net, info] = unet( varargin )
     end
     
     % Define Training and Validation Set
-    trainRatio = 0.5;
+    trainRatio = 0.8;
     trainRatio = round(size(inFiles,1)*trainRatio);
     trainOpts.train = sort(randsample(size(inFiles,1), trainRatio));
-    trainOpts.val = setdiff([1:size(inFiles,1)],trainOpts.train);
+    trainOpts.val = setdiff(1:size(inFiles,1),trainOpts.train);
     
     % Train Network
     [net, info] = cnn_train_dag(net, imdb, @getBatch, trainOpts) ;
@@ -69,7 +69,7 @@ function [net, info] = unet( varargin )
     input = zeros(size(inputData,1)+2*pad, ...
                   size(inputData,2)+2*pad, ...
                   1, ...
-                  size(inputData,3));
+                  size(inputData,4));
     input(pad+1:end-pad,pad+1:end-pad,:,:) = inputData;
     input = single(input);
     net.eval({'input',input});
@@ -92,8 +92,9 @@ function inputs = getBatch(imdb, batch, varargin)
     input = zeros(size(inputData,1)+2*pad, ...
                   size(inputData,2)+2*pad, ...
                   1, ...
-                  size(inputData,3));
+                  size(inputData,4));
     input(pad+1:end-pad,pad+1:end-pad,:,:) = inputData;
+    input = input / 255;
     input = single(input);
     
     % Create array on GPU
@@ -109,7 +110,16 @@ function inputs = getBatch(imdb, batch, varargin)
     outputsize = 244;
     crop = (size(output,1) - outputsize)/2;
     output = output(crop+1:end-crop,crop+1:end-crop,:,:);
+    output = output / 255;
     output = single(output);
+    
+    %for i = 1:14
+    %    figure(1);
+    %    imagesc(input(:,:,:,i))
+    %    figure(2);
+    %    imagesc(output(:,:,:,i))
+    %    pause;
+    %end
     
     % Create array on GPU
     %output = gpuArray(output);
