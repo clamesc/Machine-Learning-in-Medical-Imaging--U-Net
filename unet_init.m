@@ -64,9 +64,9 @@ function net = unet_init()
     %net.addLayer('concat_48', dagnn.Concat('dim', 3), {'x48', 'x47'}, {'x49'}, {});
     net.addLayer('conv3x3_49', convBlock(3,3,128,256), {'x05'}, {'x50'}, {'f49', 'b49'});
     net.addLayer('relu_50', dagnn.ReLU(), {'x50'}, {'x51'}, {});
-    net.addLayer('conv3x3_51', convBlock(3,3,256,1024), {'x51'}, {'x52'}, {'f51', 'b51'});
+    net.addLayer('conv3x3_51', convBlock(3,3,256,512), {'x51'}, {'x52'}, {'f51', 'b51'});
     net.addLayer('relu_52', dagnn.ReLU(), {'x52'}, {'x53'}, {});
-    net.addLayer('conv1x1_53', convBlock(1,1,1024,1), {'x53'}, {'predictions'}, {'f53', 'b53'});
+    net.addLayer('conv1x1_53', convBlock(1,1,512,1), {'x53'}, {'predictions'}, {'f53', 'b53'});
     
     net.addLayer('loss', dagnn.Loss('loss', 'regloss'), {'predictions', 'labels'}, 'objective') ;
 

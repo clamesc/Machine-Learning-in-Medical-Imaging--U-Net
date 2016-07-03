@@ -10,10 +10,10 @@ function [net, info] = unet( varargin )
     trainOpts.train = [];
     trainOpts.batchSize = 1;
     trainOpts.numSubBatches = 1;
-    trainOpts.numEpochs = 50;
-    trainOpts.continue = false;
+    trainOpts.numEpochs = 16;
+    trainOpts.continue = true;
     trainOpts.gpus = []; %1
-    trainOpts.learningRate = 0.00000001;
+    trainOpts.learningRate = [10e-6*ones(1,5), 10e-7*ones(1,8)];
     trainOpts.momentum = 0.9 ;
     %trainOpts.plotStatistics = false;
     trainOpts.derOutputs = {'objective', 1};
@@ -42,7 +42,7 @@ function [net, info] = unet( varargin )
     outFiles = outFiles(:,1);
     
     % Reduce Dataset for Testing
-    testNumber = 2;
+    testNumber = 10;
     inFiles = inFiles(1:testNumber,1);
     outFiles = outFiles(1:testNumber,1);
     
@@ -53,10 +53,10 @@ function [net, info] = unet( varargin )
     end
     
     % Define Training and Validation Set
-    trainRatio = 0.5;
+    trainRatio = 0.7;
     trainRatio = round(size(inFiles,1)*trainRatio);
     trainOpts.train = sort(randsample(size(inFiles,1), trainRatio));
-    trainOpts.val = setdiff([1:size(inFiles,1)],trainOpts.train);
+    trainOpts.val = setdiff(1:size(inFiles,1),trainOpts.train);
     
     % Train Network
     [net, info] = cnn_train_dag(net, imdb, @getBatch, trainOpts) ;
@@ -64,7 +64,7 @@ function [net, info] = unet( varargin )
     % Show Prediction for Trained Network
     inputData = vl_imreadjpeg(imdb.inFilenames(1), 'NumThreads', 6);
     inputData = cat(4, inputData{:});
-    inputsize = 428;
+    inputsize = 264;
     pad = (inputsize - size(inputData,1))/2;
     input = zeros(size(inputData,1)+2*pad, ...
                   size(inputData,2)+2*pad, ...
@@ -94,6 +94,7 @@ function inputs = getBatch(imdb, batch, varargin)
                   1, ...
                   size(inputData,3));
     input(pad+1:end-pad,pad+1:end-pad,:,:) = inputData;
+    input = input/255;
     input = single(input);
     
     % Create array on GPU
@@ -109,6 +110,7 @@ function inputs = getBatch(imdb, batch, varargin)
     outputsize = 256;
     crop = (size(output,1) - outputsize)/2;
     output = output(crop+1:end-crop,crop+1:end-crop,:,:);
+    output = output/255;
     output = single(output);
     
     % Create array on GPU
