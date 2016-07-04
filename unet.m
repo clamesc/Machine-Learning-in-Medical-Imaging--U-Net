@@ -10,10 +10,10 @@ function [net, info] = unet( varargin )
     trainOpts.train = [];
     trainOpts.batchSize = 20;
     trainOpts.numSubBatches = 1;
-    trainOpts.numEpochs = 25;
-    trainOpts.continue = false;
+    trainOpts.numEpochs = 30;
+    trainOpts.continue = true;
     trainOpts.gpus = []; %1
-    trainOpts.learningRate = [10e-6*ones(1,5), 10e-7*ones(1,5), 10e-8*ones(1,5), 10e-9*ones(1,5), 10e-10*ones(1,5)];
+    trainOpts.learningRate = 10e-8*ones(1,30);
     trainOpts.momentum = 0.95 ;
     %trainOpts.plotStatistics = false;
     trainOpts.derOutputs = {'objective', 1};
@@ -23,7 +23,7 @@ function [net, info] = unet( varargin )
     net = unet_init();
     
     % Set different Learning Rate for Transposed Convolutions
-    convtFactor = 1.0;
+    convtFactor = 0.1;
     convtLR = trainOpts.learningRate * convtFactor;
     net.layers(25).learningRate = [convtLR, convtLR];
     net.layers(32).learningRate = [convtLR, convtLR];
@@ -42,7 +42,7 @@ function [net, info] = unet( varargin )
     outFiles = outFiles(:,1);
     
     % Reduce Dataset for Testing
-    testNumber = 1000;
+    testNumber = 50;
     inFiles = inFiles(1:testNumber,1);
     outFiles = outFiles(1:testNumber,1);
     
@@ -62,7 +62,7 @@ function [net, info] = unet( varargin )
     [net, info] = cnn_train_dag(net, imdb, @getBatch, trainOpts) ;
     
     % Show Prediction for Trained Network
-    inputData = vl_imreadjpeg(imdb.inFilenames(1), 'NumThreads', 6);
+    inputData = vl_imreadjpeg(imdb.inFilenames(24), 'NumThreads', 4);
     inputData = cat(4, inputData{:});
     inputsize = 428;
     pad = (inputsize - size(inputData,1))/2;
@@ -70,7 +70,8 @@ function [net, info] = unet( varargin )
                   size(inputData,2)+2*pad, ...
                   1, ...
                   size(inputData,4));
-    input(pad+1:end-pad,pad+1:end-pad,:,:) = inputData;
+    input(pad+1:end-pad,pad+1:end-pad,:,:) = inputData(:,:,1,:);
+    input = input / 255;
     input = single(input);
     net.eval({'input',input});
     prediction = net.vars(net.getVarIndex('predictions')).value;
@@ -81,7 +82,7 @@ end
 function inputs = getBatch(imdb, batch, varargin)
 
     % Load batch input
-    inputData = vl_imreadjpeg(imdb.inFilenames(batch), 'NumThreads', 6);
+    inputData = vl_imreadjpeg(imdb.inFilenames(batch), 'NumThreads', 4);
     
     % Convert structure format into array
     inputData = cat(4, inputData{:});
@@ -93,7 +94,7 @@ function inputs = getBatch(imdb, batch, varargin)
                   size(inputData,2)+2*pad, ...
                   1, ...
                   size(inputData,4));
-    input(pad+1:end-pad,pad+1:end-pad,:,:) = inputData;
+    input(pad+1:end-pad,pad+1:end-pad,:,:) = inputData(:,:,1,:);
     input = input / 255;
     input = single(input);
     
@@ -101,7 +102,7 @@ function inputs = getBatch(imdb, batch, varargin)
     %input = gpuArray(input);
     
     % Load batch output
-    output = vl_imreadjpeg(imdb.outFilenames(batch), 'NumThreads', 6);
+    output = vl_imreadjpeg(imdb.outFilenames(batch), 'NumThreads', 4);
     
     % Convert structure format into array
     output = cat(4, output{:});
@@ -109,7 +110,7 @@ function inputs = getBatch(imdb, batch, varargin)
     % Crop images to output size
     outputsize = 244;
     crop = (size(output,1) - outputsize)/2;
-    output = output(crop+1:end-crop,crop+1:end-crop,:,:);
+    output = output(crop+1:end-crop,crop+1:end-crop,1,:);
     output = output / 255;
     output = single(output);
     
