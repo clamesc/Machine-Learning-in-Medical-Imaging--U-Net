@@ -36,33 +36,33 @@ function net = unet_init()
     net.addLayer('relu_24', dagnn.ReLU(), {'x24'}, {'x25'}, {});
     net.addLayer('upconv_25', convtBlock(2,2,512,1024), {'x25'}, {'x26'}, {'f25', 'b25'});
     
-    net.addLayer('crop_26', dagnn.Crop(), {'x20', 'x26'}, {'x27'}, {});
-    net.addLayer('concat_27', dagnn.Concat('dim', 3), {'x27', 'x26'}, {'x28'}, {});
-    net.addLayer('conv3x3_28', convBlock(3,3,1024,512), {'x28'}, {'x29'}, {'f28', 'b28'});
+    %net.addLayer('crop_26', dagnn.Crop(), {'x20', 'x26'}, {'x27'}, {});
+    %net.addLayer('concat_27', dagnn.Concat('dim', 3), {'x27', 'x26'}, {'x28'}, {});
+    net.addLayer('conv3x3_28', convBlock(3,3,512,512), {'x26'}, {'x29'}, {'f28', 'b28'});
     net.addLayer('relu_29', dagnn.ReLU(), {'x29'}, {'x30'}, {});
     net.addLayer('conv3x3_30', convBlock(3,3,512,512), {'x30'}, {'x31'}, {'f30', 'b30'});
     net.addLayer('relu_31', dagnn.ReLU(), {'x31'}, {'x32'}, {});
     net.addLayer('upconv_32', convtBlock(2,2,256,512), {'x32'}, {'x33'}, {'f32', 'b32'});
     
-    net.addLayer('crop_33', dagnn.Crop(), {'x15', 'x33'}, {'x34'}, {});
-    net.addLayer('concat_34', dagnn.Concat('dim', 3), {'x34', 'x33'}, {'x35'}, {});
-    net.addLayer('conv3x3_35', convBlock(3,3,512,256), {'x35'}, {'x36'}, {'f35', 'b35'});
+    %net.addLayer('crop_33', dagnn.Crop(), {'x15', 'x33'}, {'x34'}, {});
+    %net.addLayer('concat_34', dagnn.Concat('dim', 3), {'x34', 'x33'}, {'x35'}, {});
+    net.addLayer('conv3x3_35', convBlock(3,3,256,256), {'x33'}, {'x36'}, {'f35', 'b35'});
     net.addLayer('relu_36', dagnn.ReLU(), {'x36'}, {'x37'}, {});
     net.addLayer('conv3x3_37', convBlock(3,3,256,256), {'x37'}, {'x38'}, {'f37', 'b37'});
     net.addLayer('relu_38', dagnn.ReLU(), {'x38'}, {'x39'}, {});
     net.addLayer('upconv_39', convtBlock(2,2,128,256), {'x39'}, {'x40'}, {'f39', 'b39'});
     
-    net.addLayer('crop_40', dagnn.Crop(), {'x10', 'x40'}, {'x41'}, {});
-    net.addLayer('concat_41', dagnn.Concat('dim', 3), {'x41', 'x40'}, {'x42'}, {});
-    net.addLayer('conv3x3_42', convBlock(3,3,256,128), {'x42'}, {'x43'}, {'f42', 'b42'});
+    %net.addLayer('crop_40', dagnn.Crop(), {'x10', 'x40'}, {'x41'}, {});
+    %net.addLayer('concat_41', dagnn.Concat('dim', 3), {'x41', 'x40'}, {'x42'}, {});
+    net.addLayer('conv3x3_42', convBlock(3,3,128,128), {'x40'}, {'x43'}, {'f42', 'b42'});
     net.addLayer('relu_43', dagnn.ReLU(), {'x43'}, {'x44'}, {});
     net.addLayer('conv3x3_44', convBlock(3,3,128,128), {'x44'}, {'x45'}, {'f44', 'b44'});
     net.addLayer('relu_45', dagnn.ReLU(), {'x45'}, {'x46'}, {});
     net.addLayer('upconv_46', convtBlock(2,2,64,128), {'x46'}, {'x47'}, {'f46', 'b46'});
     
-    net.addLayer('crop_47', dagnn.Crop(), {'x05', 'x47'}, {'x48'}, {});
-    net.addLayer('concat_48', dagnn.Concat('dim', 3), {'x48', 'x47'}, {'x49'}, {});
-    net.addLayer('conv3x3_49', convBlock(3,3,128,64), {'x49'}, {'x50'}, {'f49', 'b49'});
+    %net.addLayer('crop_47', dagnn.Crop(), {'x05', 'x47'}, {'x48'}, {});
+    %net.addLayer('concat_48', dagnn.Concat('dim', 3), {'x48', 'x47'}, {'x49'}, {});
+    net.addLayer('conv3x3_49', convBlock(3,3,64,64), {'x47'}, {'x50'}, {'f49', 'b49'});
     net.addLayer('relu_50', dagnn.ReLU(), {'x50'}, {'x51'}, {});
     net.addLayer('conv3x3_51', convBlock(3,3,64,64), {'x51'}, {'x52'}, {'f51', 'b51'});
     net.addLayer('relu_52', dagnn.ReLU(), {'x52'}, {'x53'}, {});
@@ -74,7 +74,7 @@ function net = unet_init()
     net.initParams();
     
     %Visualize Network
-    %net.print({'input', [428 428 1]}, 'all', true, 'format', 'dot')
+    net.print({'input', [428 428 1]}, 'all', true, 'format', 'dot')
     
     %Receptive Fields
     %net.getVarReceptiveFields('x01').size

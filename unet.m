@@ -10,11 +10,11 @@ function [net, info] = unet( varargin )
     trainOpts.train = [];
     trainOpts.batchSize = 20;
     trainOpts.numSubBatches = 1;
-    trainOpts.numEpochs = 30;
-    trainOpts.continue = true;
+    trainOpts.numEpochs = 11;
+    trainOpts.continue = false;
     trainOpts.gpus = []; %1
-    trainOpts.learningRate = 10e-8*ones(1,30);
-    trainOpts.momentum = 0.95 ;
+    trainOpts.learningRate = 10e-7*ones(1,30);
+    trainOpts.momentum = 0.9 ;
     %trainOpts.plotStatistics = false;
     trainOpts.derOutputs = {'objective', 1};
     trainOpts = vl_argparse(trainOpts, varargin);
@@ -23,7 +23,7 @@ function [net, info] = unet( varargin )
     net = unet_init();
     
     % Set different Learning Rate for Transposed Convolutions
-    convtFactor = 0.1;
+    convtFactor = 1.0;
     convtLR = trainOpts.learningRate * convtFactor;
     net.layers(25).learningRate = [convtLR, convtLR];
     net.layers(32).learningRate = [convtLR, convtLR];
@@ -42,7 +42,7 @@ function [net, info] = unet( varargin )
     outFiles = outFiles(:,1);
     
     % Reduce Dataset for Testing
-    testNumber = 50;
+    testNumber = 100;
     inFiles = inFiles(1:testNumber,1);
     outFiles = outFiles(1:testNumber,1);
     
