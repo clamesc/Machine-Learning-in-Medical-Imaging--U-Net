@@ -10,7 +10,7 @@ function [net, info] = unet( varargin )
     trainOpts.train = [];
     trainOpts.batchSize = 20;
     trainOpts.numSubBatches = 1;
-    trainOpts.numEpochs = 11;
+    trainOpts.numEpochs = 100;
     trainOpts.continue = false;
     trainOpts.gpus = []; %1
     trainOpts.learningRate = 10e-7*ones(1,30);
@@ -20,15 +20,16 @@ function [net, info] = unet( varargin )
     trainOpts = vl_argparse(trainOpts, varargin);
     
     % Initialise CNN
+    net = NaN;
     net = unet_init();
     
     % Set different Learning Rate for Transposed Convolutions
-    convtFactor = 1.0;
-    convtLR = trainOpts.learningRate * convtFactor;
-    net.layers(25).learningRate = [convtLR, convtLR];
-    net.layers(32).learningRate = [convtLR, convtLR];
-    net.layers(39).learningRate = [convtLR, convtLR];
-    net.layers(46).learningRate = [convtLR, convtLR];
+    %convtFactor = 1.0;
+    %convtLR = trainOpts.learningRate * convtFactor;
+    %net.layers(25).learningRate = [convtLR, convtLR];
+    %net.layers(32).learningRate = [convtLR, convtLR];
+    %net.layers(39).learningRate = [convtLR, convtLR];
+    %net.layers(46).learningRate = [convtLR, convtLR];
     
     % Get Filenames
     inPath = '/home/qwertzuiopu/data/2d_images_extr/T1/';
@@ -42,7 +43,7 @@ function [net, info] = unet( varargin )
     outFiles = outFiles(:,1);
     
     % Reduce Dataset for Testing
-    testNumber = 100;
+    testNumber = 2;
     inFiles = inFiles(1:testNumber,1);
     outFiles = outFiles(1:testNumber,1);
     
@@ -53,18 +54,18 @@ function [net, info] = unet( varargin )
     end
     
     % Define Training and Validation Set
-    trainRatio = 0.8;
+    trainRatio = 0.5;
     trainRatio = round(size(inFiles,1)*trainRatio);
     trainOpts.train = sort(randsample(size(inFiles,1), trainRatio));
     trainOpts.val = setdiff(1:size(inFiles,1),trainOpts.train);
     
     % Train Network
-    [net, info] = cnn_train_dag(net, imdb, @getBatch, trainOpts) ;
+    %[net, info] = cnn_train_dag(net, imdb, @getBatch, trainOpts) ;
     
     % Show Prediction for Trained Network
-    inputData = vl_imreadjpeg(imdb.inFilenames(24), 'NumThreads', 4);
+    inputData = vl_imreadjpeg(imdb.inFilenames(1), 'NumThreads', 4);
     inputData = cat(4, inputData{:});
-    inputsize = 428;
+    inputsize = 356;
     pad = (inputsize - size(inputData,1))/2;
     input = zeros(size(inputData,1)+2*pad, ...
                   size(inputData,2)+2*pad, ...
@@ -88,7 +89,7 @@ function inputs = getBatch(imdb, batch, varargin)
     inputData = cat(4, inputData{:});
     
     % Add padding to images to match inputsize
-    inputsize = 428;
+    inputsize = 356;
     pad = (inputsize - size(inputData,1))/2;
     input = zeros(size(inputData,1)+2*pad, ...
                   size(inputData,2)+2*pad, ...
@@ -108,7 +109,7 @@ function inputs = getBatch(imdb, batch, varargin)
     output = cat(4, output{:});
     
     % Crop images to output size
-    outputsize = 244;
+    outputsize = 254;
     crop = (size(output,1) - outputsize)/2;
     output = output(crop+1:end-crop,crop+1:end-crop,1,:);
     output = output / 255;
