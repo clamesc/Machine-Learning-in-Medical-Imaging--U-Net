@@ -13,8 +13,8 @@ function [net, info] = unet( varargin )
     trainOpts.numEpochs = 100;
     trainOpts.continue = false;
     trainOpts.gpus = []; %1
-    trainOpts.learningRate = 10e-7*ones(1,30);
-    trainOpts.momentum = 0.9 ;
+    trainOpts.learningRate = 10e-4*ones(1,30);
+    trainOpts.momentum = 0.5 ;
     %trainOpts.plotStatistics = false;
     trainOpts.derOutputs = {'objective', 1};
     trainOpts = vl_argparse(trainOpts, varargin);
@@ -43,7 +43,7 @@ function [net, info] = unet( varargin )
     outFiles = outFiles(:,1);
     
     % Reduce Dataset for Testing
-    testNumber = 2;
+    testNumber = 25;
     inFiles = inFiles(1:testNumber,1);
     outFiles = outFiles(1:testNumber,1);
     
@@ -60,12 +60,12 @@ function [net, info] = unet( varargin )
     trainOpts.val = setdiff(1:size(inFiles,1),trainOpts.train);
     
     % Train Network
-    %[net, info] = cnn_train_dag(net, imdb, @getBatch, trainOpts) ;
+    [net, info] = cnn_train_dag(net, imdb, @getBatch, trainOpts) ;
     
     % Show Prediction for Trained Network
-    inputData = vl_imreadjpeg(imdb.inFilenames(1), 'NumThreads', 4);
+    inputData = vl_imreadjpeg(imdb.inFilenames(20), 'NumThreads', 4);
     inputData = cat(4, inputData{:});
-    inputsize = 356;
+    inputsize = 264;
     pad = (inputsize - size(inputData,1))/2;
     input = zeros(size(inputData,1)+2*pad, ...
                   size(inputData,2)+2*pad, ...
@@ -89,7 +89,7 @@ function inputs = getBatch(imdb, batch, varargin)
     inputData = cat(4, inputData{:});
     
     % Add padding to images to match inputsize
-    inputsize = 356;
+    inputsize = 264;
     pad = (inputsize - size(inputData,1))/2;
     input = zeros(size(inputData,1)+2*pad, ...
                   size(inputData,2)+2*pad, ...
@@ -109,7 +109,7 @@ function inputs = getBatch(imdb, batch, varargin)
     output = cat(4, output{:});
     
     % Crop images to output size
-    outputsize = 254;
+    outputsize = 256;
     crop = (size(output,1) - outputsize)/2;
     output = output(crop+1:end-crop,crop+1:end-crop,1,:);
     output = output / 255;
