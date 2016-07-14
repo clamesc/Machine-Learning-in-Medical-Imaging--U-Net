@@ -13,13 +13,12 @@ for f = 1 : size(testFiles,1)
     imdb.testFiles{f} = char(fullfile(testpath, testFiles(f)));
 end
 
-input = vl_imreadjpeg(imdb.testFiles(3), 'NumThreads', 4);
+input = vl_imreadjpeg(imdb.testFiles(1), 'NumThreads', 4);
 input = cat(4, input{:});
 input = input(:,:,1,:);
 input = input / 255;
 input = single(input);
     
 net.eval({'input',input});
-prediction = net.vars(net.getVarIndex('x45')).value
-max(max(prediction))
+prediction = net.vars(net.getVarIndex('x45')).value;
 imagesc(prediction)
