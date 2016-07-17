@@ -8,108 +8,92 @@ function [net, info] = unet( varargin )
     trainOpts.expDir = fullfile(pwd,'data');
     trainOpts.val = [];
     trainOpts.train = [];
-    trainOpts.batchSize = 1;
+    trainOpts.batchSize = 15;
     trainOpts.numSubBatches = 1;
-    trainOpts.numEpochs = 14;
     trainOpts.continue = true;
     trainOpts.gpus = []; %1
-    trainOpts.learningRate = 0.00000001;
+    trainOpts.learningRate = 1e-7*ones(1,100);
+    trainOpts.weightDecay = 0.01;
     trainOpts.momentum = 0.9 ;
+    trainOpts.numEpochs = numel(trainOpts.learningRate);
     %trainOpts.plotStatistics = false;
     trainOpts.derOutputs = {'objective', 1};
-    trainOpts = vl_argparse(trainOpts, varargin);
-    
+    trainOpts = vl_argparse(trainOpts, varargin);   
     % Initialise CNN
-    net = unet_init();
-    
-    % Set different Learning Rate for Transposed Convolutions
-    convtFactor = 0.1;
-    convtLR = trainOpts.learningRate * convtFactor;
-    net.layers(25).learningRate = [convtLR, convtLR];
-    net.layers(32).learningRate = [convtLR, convtLR];
-    net.layers(39).learningRate = [convtLR, convtLR];
-    net.layers(46).learningRate = [convtLR, convtLR];
+    net = unet_init4;
     
     % Get Filenames
-    inPath = '/home/qwertzuiopu/data/2d_images_extr/T1/';
-    outPath = '/home/qwertzuiopu/data/2d_images_extr/T2/';
+    path = '/home/qwertzuiopu/Dropbox/MLMI/Ersten 20 Bilder/';
     
-    inFiles = dir(fullfile(inPath,'*.jpg'));
-    outFiles = dir(fullfile(outPath,'*.jpg'));
-    inFiles = struct2cell(inFiles)';
-    outFiles = struct2cell(outFiles)';
-    inFiles = inFiles(:,1);
-    outFiles = outFiles(:,1);
+    trainInFiles = dir(fullfile(path,'train','T1','*.jpg'));
+    trainOutFiles = dir(fullfile(path,'train','T2','*.jpg'));
+    valInFiles = dir(fullfile(path,'val','T1','*.jpg'));
+    valOutFiles = dir(fullfile(path,'val','T2','*.jpg'));
+    trainInFiles = struct2cell(trainInFiles)';
+    trainOutFiles = struct2cell(trainOutFiles)';
+    valInFiles = struct2cell(valInFiles)';
+    valOutFiles = struct2cell(valOutFiles)';
+    trainInFiles = trainInFiles(:,1);
+    trainOutFiles = trainOutFiles(:,1);
+    valInFiles = valInFiles(:,1);
+    valOutFiles = valOutFiles(:,1);
+    for f = 1 : size(trainInFiles,1)
+        trainInFiles(f) = fullfile(path, 'train', 'T1', trainInFiles(f));
+        trainOutFiles(f) = fullfile(path, 'train', 'T2', trainOutFiles(f));
+    end
+    for f = 1 : size(valInFiles,1)
+        valInFiles(f) = fullfile(path, 'val', 'T1', valInFiles(f));
+        valOutFiles(f) = fullfile(path, 'val', 'T2', valOutFiles(f));
+    end
+    inFiles = cat(1,trainInFiles,valInFiles);
+    outFiles = cat(1,trainOutFiles,valOutFiles);
     
-    % Reduce Dataset for Testing
-    testNumber = 2;
-    inFiles = inFiles(1:testNumber,1);
-    outFiles = outFiles(1:testNumber,1);
+    % Define Training and Validation Set
+    trainOpts.train = 1 : size(trainInFiles,1);
+    trainOpts.val = (size(trainInFiles,1)+1) : (size(trainInFiles,1)+size(valInFiles,1));
     
     % Define Image Database
     for t = 1 : size(inFiles,1)
-        imdb.inFilenames{t} = fullfile(inPath, char(inFiles(t,1)));
-        imdb.outFilenames{t} = fullfile(outPath, char(outFiles(t,1)));
+        imdb.inFilenames{t} = char(inFiles(t));
+        imdb.outFilenames{t} = char(outFiles(t));
     end
-    
-    % Define Training and Validation Set
-    trainRatio = 0.5;
-    trainRatio = round(size(inFiles,1)*trainRatio);
-    trainOpts.train = sort(randsample(size(inFiles,1), trainRatio));
-    trainOpts.val = setdiff([1:size(inFiles,1)],trainOpts.train);
     
     % Train Network
     [net, info] = cnn_train_dag(net, imdb, @getBatch, trainOpts) ;
-    
-    % Show Prediction for Trained Network
-    inputData = vl_imreadjpeg(imdb.inFilenames(1), 'NumThreads', 6);
-    inputData = cat(4, inputData{:});
-    inputsize = 428;
-    pad = (inputsize - size(inputData,1))/2;
-    input = zeros(size(inputData,1)+2*pad, ...
-                  size(inputData,2)+2*pad, ...
-                  1, ...
-                  size(inputData,3));
-    input(pad+1:end-pad,pad+1:end-pad,:,:) = inputData;
-    input = single(input);
-    net.eval({'input',input});
-    prediction = net.vars(net.getVarIndex('predictions')).value;
-    imagesc(prediction)
-
 end
 
 function inputs = getBatch(imdb, batch, varargin)
 
     % Load batch input
-    inputData = vl_imreadjpeg(imdb.inFilenames(batch), 'NumThreads', 6);
+    input = vl_imreadjpeg(imdb.inFilenames(batch), 'NumThreads', 4);
     
     % Convert structure format into array
-    inputData = cat(4, inputData{:});
+    input = cat(4, input{:});
     
-    % Add padding to images to match inputsize
-    inputsize = 428;
-    pad = (inputsize - size(inputData,1))/2;
-    input = zeros(size(inputData,1)+2*pad, ...
-                  size(inputData,2)+2*pad, ...
-                  1, ...
-                  size(inputData,3));
-    input(pad+1:end-pad,pad+1:end-pad,:,:) = inputData;
+    % Normalize inputdata
+    input = input(:,:,1,:) / 255;
     input = single(input);
     
     % Create array on GPU
     %input = gpuArray(input);
     
     % Load batch output
-    output = vl_imreadjpeg(imdb.outFilenames(batch), 'NumThreads', 6);
+    output = vl_imreadjpeg(imdb.outFilenames(batch), 'NumThreads', 4);
     
     % Convert structure format into array
     output = cat(4, output{:});
     
     % Crop images to output size
-    outputsize = 244;
-    crop = (size(output,1) - outputsize)/2;
-    output = output(crop+1:end-crop,crop+1:end-crop,:,:);
+    output = output(:,:,1,:) / 255;
     output = single(output);
+    
+    %for i = 1:14
+    %    figure(1);
+    %    imagesc(input(:,:,:,i))
+    %    figure(2);
+    %    imagesc(output(:,:,:,i))
+    %    pause;
+    %end
     
     % Create array on GPU
     %output = gpuArray(output);
