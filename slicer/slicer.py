@@ -100,11 +100,12 @@ def slice3DObject(image_list, image3d_list, folder_name, extract_range, newSize)
 
 def show_histogram(img):
     # the histogram of the data with histtype='step'
-    n, bins, patches = P.hist(img, 50, normed=1, histtype='stepfilled')
+    n, bins, patches = P.hist(img, 255, normed=1, histtype='stepfilled')
     P.setp(patches, 'facecolor', 'g', 'alpha', 0.75)
     P.title("Histogram")
     P.xlabel("x")
     P.ylabel("Relative Häufigkeit")
+    P.xlim(0,255)
 
 
 
@@ -175,8 +176,8 @@ def slice_all(batch_size, folder_name, extract_range, newSize):
 
 
 def slice_one(newSize):
-    showHistogram=False
-    batch_size=1
+    showHistogram = True
+    batch_size = 1
 
     save_dir = '2DImg_test_dir'
 
@@ -195,6 +196,7 @@ def slice_one(newSize):
 
     im2d_original = arr3d[100,:,:]        # get slice(x,y) of 3d object
     saveArrayAsImage(im2d_original[::-1], save_dir+'/test_file_orig.png')    # save original image
+    #show_histogram(im2d_original)
 
     arr3d = normalize(arr3d)              # Normalize Image
 
@@ -205,8 +207,8 @@ def slice_one(newSize):
 
     im2d = im2d[::-1]                     # rotate image
 
-    im2d = adjust_size(im2d, newSize)
-
+    if newSize is not False:
+        im2d = adjust_size(im2d, newSize)
 
     if showHistogram is True:
         show_histogram(im2d)              # show the histogram of an image
@@ -218,7 +220,7 @@ def slice_one(newSize):
 def main():
     mode = 0                      # Switch mode: (0) process ALL images in folder
                                   #              (1) process only ONE 3D-image from folder
-    batch_size = 10                # Number of images processed at once (loaded into the RAM)
+    batch_size = 2                # Number of images processed at once (loaded into the RAM)
     folder_name = '2d_images_2'     # Define directory name for all slices
     extract_range = [30, 20]      # Don't extract first 20 and last 10 images
     newSize = [372, 372]          # resize imgaes to (newSize[0] x newSize[1])
@@ -227,7 +229,7 @@ def main():
     if mode == 0:
         slice_all(batch_size, folder_name, extract_range, newSize)
     elif mode == 1:
-        slice_one(newSize)
+        slice_one(newSize = False)
 
 
 

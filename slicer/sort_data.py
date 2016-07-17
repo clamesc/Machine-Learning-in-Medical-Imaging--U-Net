@@ -66,8 +66,8 @@ def sort_data(imageListT1, imageListT2, scrDirT1, scrDirT2, parts):
 
 
     # create new directories
-    trainDir = "/Users/Leonard/Desktop/2d_images/test_set"
-    testDir = "/Users/Leonard/Desktop/2d_images/train_set"
+    trainDir = "/Users/Leonard/Desktop/2d_images/train_set"
+    testDir = "/Users/Leonard/Desktop/2d_images/test_set"
     valDir = "/Users/Leonard/Desktop/2d_images/val_set"
     if not os.path.exists(trainDir + "/T1"):                  
         os.mkdir(trainDir + "/T1")
